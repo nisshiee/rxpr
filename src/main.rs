@@ -17,14 +17,16 @@ mod state;
 fn update<W: Write>(t: &mut RawTerminal<W>, state: &State) -> io::Result<()> {
     let expr = state.expr();
 
-    write!(t, "{}{}", termion::clear::All, termion::cursor::Goto(1, 1))?;
+    write!(t, "{}", termion::cursor::Goto(1, 1))?;
     write!(t, "expr> {}", &expr[..state.cursor()])?;
     write!(t, "{}", termion::cursor::Save)?;
     write!(t, "{}", &expr[state.cursor()..])?;
+    write!(t, "{}", termion::clear::UntilNewline)?;
 
     let (_, y) = t.cursor_pos()?;
     write!(t, "{}", termion::cursor::Goto(1, y + 1))?;
     write!(t, "{}", state.last_result().unwrap_or(0))?;
+    write!(t, "{}", termion::clear::UntilNewline)?;
 
     write!(t, "{}", termion::cursor::Restore)?;
     t.flush()
@@ -33,6 +35,7 @@ fn update<W: Write>(t: &mut RawTerminal<W>, state: &State) -> io::Result<()> {
 fn main() {
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
+    write!(stdout, "{}", termion::clear::All).unwrap();
 
     let mut state = State::new();
     update(&mut stdout, &state).unwrap();
