@@ -3,8 +3,11 @@ name = "rxpr"
 version = "0.1.0"
 authors = ["Hirokazu Nishioka <hiro@nisshiee.org>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "Human friendly `expr` command written in Rust."
+homepage = "https://github.com/nisshiee/rxpr"
+repository = "https://github.com/nisshiee/rxpr"
+readme = "README.md"
 
 [dependencies]
 nom = "5.1.1"
