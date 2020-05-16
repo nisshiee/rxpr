@@ -7,8 +7,8 @@ help: ## print this message
 PROJECT_VERSION := $(shell grep version Cargo.toml | head -n 1 | cut -d '"' -f2)
 
 publish-exec:
-	echo git tag "v$(PROJECT_VERSION)"
-	echo git push origin "v$(PROJECT_VERSION)"
+	git tag "v$(PROJECT_VERSION)"
+	git push origin "v$(PROJECT_VERSION)"
 
 publish: ## Push tag to GitHub and trigger publish GitHub Action
 	@echo current branch: `git branch --show-current`
