@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install dependencies
+        # clipboard crate needs some libs on Linux
+        run: sudo apt-get install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
       - name: Install rustfmt
         run: rustup component add rustfmt
 
