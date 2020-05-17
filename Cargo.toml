@@ -8,6 +8,9 @@ description = "Human friendly `expr` command written in Rust."
 homepage = "https://github.com/nisshiee/rxpr"
 repository = "https://github.com/nisshiee/rxpr"
 readme = "README.md"
+exclude = [
+  "doc/*",
+]
 
 [dependencies]
 nom = "5.1.1"
