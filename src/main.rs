@@ -1,8 +1,11 @@
+extern crate clipboard;
 extern crate nom;
 extern crate termion;
 
 use std::io;
 use std::io::{stdin, stdout, Write};
+
+use clipboard::{ClipboardContext, ClipboardProvider};
 
 use termion::cursor::DetectCursorPos;
 use termion::event::Key;
@@ -32,6 +35,13 @@ fn update<W: Write>(t: &mut RawTerminal<W>, state: &State) -> io::Result<()> {
     t.flush()
 }
 
+fn copy_to_clipboard(state: &State) -> Option<()> {
+    let res = state.last_result()?;
+    let res = format!("{}", res);
+    let mut ctx: ClipboardContext = ClipboardProvider::new().ok()?;
+    ctx.set_contents(res).ok()
+}
+
 fn main() {
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -58,6 +68,10 @@ fn main() {
             Key::Backspace | Key::Ctrl('h') => state.backspace(),
             Key::Delete | Key::Ctrl('d') => state.delete(),
             Key::Ctrl('u') => state.clear(),
+            Key::Char('\n') => {
+                copy_to_clipboard(&state).unwrap_or(()); // ignore clipboard error
+                break;
+            }
             _ => {}
         }
         update(&mut stdout, &state).unwrap();
