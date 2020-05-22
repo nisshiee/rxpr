@@ -13,10 +13,12 @@ pub use constant::Constant;
 use nom::combinator::all_consuming;
 use nom::IResult;
 
-pub trait Calculatable {
-    fn calc(&self) -> i64;
+use crate::core::Num;
+
+pub trait Calculatable<N: Num> {
+    fn calc(&self) -> N;
 }
 
-pub fn parse(input: &str) -> IResult<&str, Expr> {
+pub fn parse<N: Num>(input: &str) -> IResult<&str, Expr<N>> {
     all_consuming(expr::expr)(input)
 }

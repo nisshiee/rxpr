@@ -1,5 +1,3 @@
-use crate::core::ast::{term, Calculatable, Term};
-
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::{map, map_res};
@@ -7,49 +5,50 @@ use nom::multi::many0;
 use nom::sequence::pair;
 use nom::IResult;
 
+use crate::core::ast::{term, Calculatable, Term};
+use crate::core::Num;
+
 #[derive(Eq, PartialEq, Debug)]
-pub enum Expr {
+pub enum Expr<N: Num> {
     Terms {
-        head: Term,
-        tail: Vec<TermWithOperator>,
+        head: Term<N>,
+        tail: Vec<TermWithOperator<N>>,
     },
 }
 
-impl Calculatable for Expr {
-    fn calc(&self) -> i64 {
+impl<N: Num> Calculatable<N> for Expr<N> {
+    fn calc(&self) -> N {
         match self {
-            Expr::Terms { head, tail } => {
-                head.calc() + tail.into_iter().fold(0, |a, t| a + t.calc())
-            }
+            Expr::Terms { head, tail } => tail.into_iter().fold(head.calc(), |a, t| a + t.calc()),
         }
     }
 }
 
-pub fn expr(input: &str) -> IResult<&str, Expr> {
+pub fn expr<N: Num>(input: &str) -> IResult<&str, Expr<N>> {
     map(
-        pair(term::term, many0(term_with_operator)),
+        pair(term::term::<N>, many0(term_with_operator::<N>)),
         |(head, tail)| Expr::Terms { head, tail },
     )(input)
 }
 
 #[derive(Eq, PartialEq, Debug)]
-pub struct TermWithOperator {
+pub struct TermWithOperator<N: Num> {
     operator: Operator,
-    term: Term,
+    term: Term<N>,
 }
 
-impl Calculatable for TermWithOperator {
-    fn calc(&self) -> i64 {
+impl<N: Num> Calculatable<N> for TermWithOperator<N> {
+    fn calc(&self) -> N {
         let ret = self.term.calc();
         match self.operator {
             Operator::Plus => ret,
-            Operator::Minus => ret * -1,
+            Operator::Minus => -ret,
         }
     }
 }
 
-fn term_with_operator(input: &str) -> IResult<&str, TermWithOperator> {
-    map(pair(operator, term::term), |(operator, term)| {
+fn term_with_operator<N: Num>(input: &str) -> IResult<&str, TermWithOperator<N>> {
+    map(pair(operator, term::term::<N>), |(operator, term)| {
         TermWithOperator { operator, term }
     })(input)
 }
@@ -86,7 +85,7 @@ mod tests {
     #[test]
     fn term_with_operator_ok() {
         assert_eq!(
-            term_with_operator("+ 123"),
+            term_with_operator::<i64>("+ 123"),
             Ok((
                 "",
                 TermWithOperator {
@@ -99,14 +98,14 @@ mod tests {
 
     #[test]
     fn term_with_operator_err() {
-        assert!(term_with_operator("123").is_err());
-        assert!(term_with_operator("+ ").is_err());
+        assert!(term_with_operator::<i64>("123").is_err());
+        assert!(term_with_operator::<i64>("+ ").is_err());
     }
 
     #[test]
     fn expr_ok() {
         assert_eq!(
-            expr("1"),
+            expr::<i64>("1"),
             Ok((
                 "",
                 Expr::Terms {
@@ -116,7 +115,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            expr("1 + 2 - 3"),
+            expr::<i64>("1 + 2 - 3"),
             Ok((
                 "",
                 Expr::Terms {
@@ -138,11 +137,11 @@ mod tests {
 
     #[test]
     fn expr_err() {
-        assert!(expr("+").is_err());
+        assert!(expr::<i64>("+").is_err());
     }
 
     #[test]
     fn integration() {
-        assert_eq!(expr("(1 + 2) * 3").unwrap().1.calc(), 9);
+        assert_eq!(expr::<i64>("(1 + 2) * 3").unwrap().1.calc(), 9);
     }
 }

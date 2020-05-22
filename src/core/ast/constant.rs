@@ -1,41 +1,32 @@
-use crate::core::ast::Calculatable;
-use nom::bytes::complete::tag;
-use nom::character::complete::{digit1, space0};
-use nom::combinator::{map, map_res, opt};
-use nom::sequence::{delimited, pair};
+use nom::character::complete::space0;
+use nom::combinator::map;
+use nom::sequence::delimited;
 use nom::IResult;
 
+use crate::core::ast::Calculatable;
+use crate::core::Num;
+
 #[derive(Eq, PartialEq, Debug)]
-pub struct Constant {
-    value: i64,
+pub struct Constant<N: Num> {
+    value: N,
 }
 
-impl Constant {
-    pub fn new(value: i64) -> Constant {
+impl<N: Num> Constant<N> {
+    pub fn new(value: N) -> Constant<N> {
         Constant { value }
     }
 }
 
-impl Calculatable for Constant {
-    fn calc(&self) -> i64 {
+impl<N: Num> Calculatable<N> for Constant<N> {
+    fn calc(&self) -> N {
         self.value
     }
 }
 
-pub fn constant(input: &str) -> IResult<&str, Constant> {
-    map(
-        delimited(
-            space0,
-            pair(opt(tag("-")), map_res(digit1, |s: &str| s.parse::<i64>())),
-            space0,
-        ),
-        |(minus, mut num)| {
-            if minus.is_some() {
-                num *= -1
-            }
-            Constant::new(num)
-        },
-    )(input)
+pub fn constant<N: Num>(input: &str) -> IResult<&str, Constant<N>> {
+    map(delimited(space0, N::constant, space0), |num| {
+        Constant::new(num)
+    })(input)
 }
 
 #[cfg(test)]
@@ -51,7 +42,7 @@ mod tests {
 
     #[test]
     fn constant_err() {
-        assert!(constant("abc").is_err());
-        assert!(constant("- 123").is_err());
+        assert!(constant::<i64>("abc").is_err());
+        assert!(constant::<i64>("- 123").is_err());
     }
 }

@@ -12,12 +12,28 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 
+use crate::core::Num as NumCore;
 use crate::state::State;
 
 mod core;
 mod state;
 
-fn update<W: Write>(t: &mut RawTerminal<W>, state: &State) -> io::Result<()> {
+trait Num: NumCore {
+    fn available_chars() -> &'static str;
+}
+
+impl Num for i64 {
+    fn available_chars() -> &'static str {
+        "0123456789+-*/() "
+    }
+}
+impl Num for f64 {
+    fn available_chars() -> &'static str {
+        "0123456789+-*/(). "
+    }
+}
+
+fn update<W: Write, N: Num>(t: &mut RawTerminal<W>, state: &State<N>) -> io::Result<()> {
     let expr = state.expr();
 
     write!(t, "{}", termion::cursor::Goto(1, 1))?;
@@ -28,14 +44,18 @@ fn update<W: Write>(t: &mut RawTerminal<W>, state: &State) -> io::Result<()> {
 
     let (_, y) = t.cursor_pos()?;
     write!(t, "{}", termion::cursor::Goto(1, y + 1))?;
-    write!(t, "{}", state.last_result().unwrap_or(0))?;
+    if let Some(last_result) = state.last_result() {
+        write!(t, "{}", last_result)?;
+    } else {
+        write!(t, "-")?;
+    }
     write!(t, "{}", termion::clear::UntilNewline)?;
 
     write!(t, "{}", termion::cursor::Restore)?;
     t.flush()
 }
 
-fn copy_to_clipboard(state: &State) -> Option<()> {
+fn copy_to_clipboard<N: Num>(state: &State<N>) -> Option<()> {
     let res = state.last_result()?;
     let res = format!("{}", res);
     let mut ctx: ClipboardContext = ClipboardProvider::new().ok()?;
@@ -43,24 +63,20 @@ fn copy_to_clipboard(state: &State) -> Option<()> {
 }
 
 fn main() {
+    run_cli::<f64>()
+}
+
+fn run_cli<N: Num>() {
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
     write!(stdout, "{}", termion::clear::All).unwrap();
 
-    let mut state = State::new();
+    let mut state = State::<N>::new();
     update(&mut stdout, &state).unwrap();
 
     for c in stdin.keys() {
         match c.unwrap() {
             Key::Ctrl('c') => break,
-            Key::Char(d @ '0'..='9')
-            | Key::Char(d @ ' ')
-            | Key::Char(d @ '+')
-            | Key::Char(d @ '-')
-            | Key::Char(d @ '*')
-            | Key::Char(d @ '/')
-            | Key::Char(d @ '(')
-            | Key::Char(d @ ')') => state.input(d),
             Key::Left | Key::Ctrl('b') => state.cursor_left(),
             Key::Right | Key::Ctrl('f') => state.cursor_right(),
             Key::Up | Key::Ctrl('a') => state.cursor_first(),
@@ -71,6 +87,11 @@ fn main() {
             Key::Char('\n') => {
                 copy_to_clipboard(&state).unwrap_or(()); // ignore clipboard error
                 break;
+            }
+            Key::Char(c) => {
+                if N::available_chars().contains(c) {
+                    state.input(c)
+                }
             }
             _ => {}
         }
