@@ -1,11 +1,14 @@
 extern crate clipboard;
 extern crate nom;
+extern crate structopt;
 extern crate termion;
 
 use std::io;
 use std::io::{stdin, stdout, Write};
 
 use clipboard::{ClipboardContext, ClipboardProvider};
+
+use structopt::StructOpt;
 
 use termion::cursor::DetectCursorPos;
 use termion::event::Key;
@@ -62,8 +65,21 @@ fn copy_to_clipboard<N: Num>(state: &State<N>) -> Option<()> {
     ctx.set_contents(res).ok()
 }
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "rxpr")]
+struct Opt {
+    /// 64bit integer mode (default: 64bit float mode)
+    #[structopt(short, long)]
+    i64: bool,
+}
+
 fn main() {
-    run_cli::<f64>()
+    let opt = Opt::from_args();
+    if opt.i64 {
+        run_cli::<i64>()
+    } else {
+        run_cli::<f64>()
+    }
 }
 
 fn run_cli<N: Num>() {
