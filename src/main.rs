@@ -47,11 +47,16 @@ fn update<W: Write, N: Num>(t: &mut RawTerminal<W>, state: &State<N>) -> io::Res
 
     let (_, y) = t.cursor_pos()?;
     write!(t, "{}", termion::cursor::Goto(1, y + 1))?;
+
+    if !state.valid() {
+        write!(t, "{}", termion::color::Fg(termion::color::LightRed))?;
+    }
     if let Some(last_result) = state.last_result() {
         write!(t, "{}", last_result)?;
     } else {
         write!(t, "-")?;
     }
+    write!(t, "{}", termion::color::Fg(termion::color::Reset))?;
     write!(t, "{}", termion::clear::UntilNewline)?;
 
     write!(t, "{}", termion::cursor::Restore)?;
