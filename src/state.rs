@@ -3,6 +3,7 @@ use crate::core::*;
 pub struct State<N: Num> {
     expr: Vec<char>,
     cursor: usize,
+    valid: bool,
     last_result: Option<N>,
 }
 
@@ -11,6 +12,7 @@ impl<N: Num> State<N> {
         State {
             expr: Vec::new(),
             cursor: 0,
+            valid: false,
             last_result: None,
         }
     }
@@ -59,6 +61,7 @@ impl<N: Num> State<N> {
     pub fn clear(&mut self) {
         self.expr.clear();
         self.cursor = 0;
+        self.update();
     }
 
     pub fn expr(&self) -> String {
@@ -72,6 +75,10 @@ impl<N: Num> State<N> {
         self.cursor
     }
 
+    pub fn valid(&self) -> bool {
+        self.valid
+    }
+
     pub fn last_result(&self) -> Option<N> {
         self.last_result
     }
@@ -81,8 +88,11 @@ impl<N: Num> State<N> {
             Ok((_, expr)) => {
                 let res = expr.calc();
                 self.last_result = Some(res);
+                self.valid = true;
             }
-            _ => {}
+            _ => {
+                self.valid = false;
+            }
         }
     }
 }
