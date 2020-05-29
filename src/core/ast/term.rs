@@ -1,4 +1,3 @@
-use crate::core::ast::{factor, Calculatable, Factor};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::{map, map_res};
@@ -6,16 +5,19 @@ use nom::multi::many0;
 use nom::sequence::pair;
 use nom::IResult;
 
+use crate::core::ast::{factor, Calculatable, Factor};
+use crate::core::Num;
+
 #[derive(Eq, PartialEq, Debug)]
-pub enum Term {
+pub enum Term<N: Num> {
     Factors {
-        head: Factor,
-        tail: Vec<FactorWithOperator>,
+        head: Factor<N>,
+        tail: Vec<FactorWithOperator<N>>,
     },
 }
 
-impl Calculatable for Term {
-    fn calc(&self) -> i64 {
+impl<N: Num> Calculatable<N> for Term<N> {
+    fn calc(&self) -> N {
         match self {
             Term::Factors { head, tail } => tail.into_iter().fold(head.calc(), |a, e| match e {
                 FactorWithOperator {
@@ -31,21 +33,21 @@ impl Calculatable for Term {
     }
 }
 
-pub fn term(input: &str) -> IResult<&str, Term> {
+pub fn term<N: Num>(input: &str) -> IResult<&str, Term<N>> {
     map(
-        pair(factor::factor, many0(factor_with_operator)),
+        pair(factor::factor::<N>, many0(factor_with_operator::<N>)),
         |(head, tail)| Term::Factors { head, tail },
     )(input)
 }
 
 #[derive(Eq, PartialEq, Debug)]
-pub struct FactorWithOperator {
+pub struct FactorWithOperator<N: Num> {
     operator: Operator,
-    factor: Factor,
+    factor: Factor<N>,
 }
 
-fn factor_with_operator(input: &str) -> IResult<&str, FactorWithOperator> {
-    map(pair(operator, factor::factor), |(operator, factor)| {
+fn factor_with_operator<N: Num>(input: &str) -> IResult<&str, FactorWithOperator<N>> {
+    map(pair(operator, factor::factor::<N>), |(operator, factor)| {
         FactorWithOperator { operator, factor }
     })(input)
 }
@@ -82,7 +84,7 @@ mod tests {
     #[test]
     fn factor_with_operator_ok() {
         assert_eq!(
-            factor_with_operator("* 123"),
+            factor_with_operator::<i64>("* 123"),
             Ok((
                 "",
                 FactorWithOperator {
@@ -96,7 +98,7 @@ mod tests {
     #[test]
     fn term_ok() {
         assert_eq!(
-            term("123"),
+            term::<i64>("123"),
             Ok((
                 "",
                 Term::Factors {
@@ -109,6 +111,6 @@ mod tests {
 
     #[test]
     fn term_err() {
-        assert!(term("abc").is_err());
+        assert!(term::<i64>("abc").is_err());
     }
 }

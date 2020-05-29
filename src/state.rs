@@ -1,13 +1,13 @@
 use crate::core::*;
 
-pub struct State {
+pub struct State<N: Num> {
     expr: Vec<char>,
     cursor: usize,
-    last_result: Option<i64>,
+    last_result: Option<N>,
 }
 
-impl State {
-    pub fn new() -> State {
+impl<N: Num> State<N> {
+    pub fn new() -> State<N> {
         State {
             expr: Vec::new(),
             cursor: 0,
@@ -72,7 +72,7 @@ impl State {
         self.cursor
     }
 
-    pub fn last_result(&self) -> Option<i64> {
+    pub fn last_result(&self) -> Option<N> {
         self.last_result
     }
 
