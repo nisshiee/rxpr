@@ -15,7 +15,7 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 
-use crate::core::Num as NumCore;
+use crate::core::{parse, Calculatable, Num as NumCore};
 use crate::state::State;
 
 mod core;
@@ -80,10 +80,19 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
+
     if opt.i64 {
-        run_cli::<i64>()
+        run::<i64>()
     } else {
-        run_cli::<f64>()
+        run::<f64>()
+    }
+}
+
+fn run<N: Num>() {
+    if termion::is_tty(&stdin()) && termion::is_tty(&stdout()) {
+        run_cli::<N>();
+    } else {
+        run_io::<N>();
     }
 }
 
@@ -122,4 +131,20 @@ fn run_cli<N: Num>() {
     let (_, y) = stdout.cursor_pos().unwrap();
     write!(stdout, "{}", termion::cursor::Goto(1, y + 2)).unwrap();
     stdout.flush().unwrap();
+}
+
+fn run_io<N: Num>() {
+    let mut buf = String::new();
+    while let Ok(n) = stdin().read_line(&mut buf) {
+        if n == 0 {
+            break;
+        }
+        let expr = buf.trim();
+        if let Ok((_, expr)) = parse::<N>(expr) {
+            println!("{}", expr.calc());
+        } else {
+            println!();
+        }
+        buf.clear();
+    }
 }
