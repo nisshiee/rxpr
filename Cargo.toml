@@ -1,6 +1,6 @@
 [package]
 name = "rxpr"
-version = "0.1.2"
+version = "1.0.0"
 authors = ["Hirokazu Nishioka <hiro@nisshiee.org>"]
 edition = "2018"
 license = "MIT"
